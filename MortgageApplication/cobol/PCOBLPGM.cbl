@@ -1,186 +1,106 @@
-       ID DIVISION.
-       PROGRAM-ID. EPSNBRVL
-      *    THIS IS A CALLED PROGRAM EXAMPLE FOR DEMONSTRATION
-      *
-      *    THIS PROGRAM WILL BE CALLED BY ANOTHER, RECEIVE
-      *    THE FOLLOWING INFOMATION AND RETURN A MONTLY PAYMENT AMOUNT
-      *    INPUT:
-      *       ORIGINAL PRINCIPLE AMOUNT
-      *       YEARS OR MONTH INDICATOR
-      *       NUMBER OF YEARS
-      *       NUMBER OF MONTHS
-      *       INTEREST RATE
-      *    OUTPUT:
-      *       MONTHLY PAYMENT
-      *
-      *    (C) 2008 IBM - Jim Hildner
-       ENVIRONMENT DIVISION.
-       CONFIGURATION SECTION.
-       SOURCE-COMPUTER. FLEX-ES.
-       OBJECT-COMPUTER. FLEX-ES.
-       DATA DIVISION.
-       WORKING-STORAGE SECTION.
-      *
-       01 WS-STATIC-DATA.
-           03 STATIC-ERRORS.
-              05 FILLER                  PIC 99 VALUE 1.
-              05 FILLER                  PIC X(80)
-              VALUE 'NO NUMBER PRESENT'.
-              05 FILLER                  PIC 99 VALUE 2.
-              05 FILLER                  PIC X(80)
-              VALUE 'SPACES IN NUMBER'.
-              05 FILLER                  PIC 99 VALUE 3.
-              05 FILLER                  PIC X(80)
-              VALUE 'TOO MANY DEICMAL POINTS'.
-              05 FILLER                  PIC 99 VALUE 4.
-              05 FILLER                  PIC X(80)
-              VALUE 'YEARS INDICATED, BUT YEARS ZERO OR LESS'.
-              05 FILLER                  PIC 99 VALUE 5.
-              05 FILLER                  PIC X(80)
-              VALUE 'ZERO OR LESS MONTHS'.
-              05 FILLER                  PIC 99 VALUE 6.
-              05 FILLER                  PIC X(80)
-              VALUE ' '.
-              05 FILLER                  PIC 99 VALUE 7.
-              05 FILLER                  PIC X(80)
-              VALUE ' '.
-              05 FILLER                  PIC 99 VALUE 8.
-              05 FILLER                  PIC X(80)
-              VALUE ' '.
-              05 FILLER                  PIC 99 VALUE 9.
-              05 FILLER                  PIC X(80)
-              VALUE ' '.
-              05 FILLER                  PIC 99 VALUE 10.
-              05 FILLER                  PIC X(80)
-              VALUE ' '.
-           03 STATIC-ERROR-TBL REDEFINES STATIC-ERRORS.
-              05 STATIC-ERROR-TABLE OCCURS 10 TIMES.
-                07 ERROR-INDICATOR         PIC 99.
-                07 ERROR-TEXT              PIC X(80).
-       01  WS-WORK-AMOUNTS.
-           03 WS-LEADING-SPACES      PIC 9(4) COMP VALUE 1.
-           03 WS-TRAILING-SPACES     PIC 9(4) COMP VALUE 0.
-           03 WS-END-SPACE           PIC 9(4) COMP VALUE 0.
-           03 WS-DECIMAL-SPACE       PIC 99        VALUE 0.
-           03 WS-IDX                 PIC 9(2) COMP.
-           03 WS-DEC-IDX             PIC 9(2) COMP.
-           03 WS-NUM-IDX             PIC 9(2) COMP.
-
-           03 WS-MAX-NUMBER-LGTH     PIC 9(2) COMP.
-           03 WS-MAX-FIELD           PIC 9(2) COMP.
-           03 WS-DEC-ADJUST          PIC 9.
-
-
-       LINKAGE SECTION.
-      *
-       COPY EPSNBRPM.
-
-       PROCEDURE DIVISION USING EPS-NUMBER-VALIDATION.
-      *
-       A000-MAINLINE.
-           MOVE EPSPARM-MAX-LENGTH              TO WS-IDX.
-           MOVE LENGTH OF EPSPARM-VALIDATE-DATA TO WS-MAX-FIELD
-           IF WS-IDX > WS-MAX-FIELD
-              MOVE WS-MAX-FIELD TO WS-IDX
-           ELSE
-              MOVE WS-IDX       TO WS-MAX-FIELD
-           END-IF.
-
-           MOVE ZERO   TO WS-END-SPACE.
-           MOVE SPACES TO EPSPARM-RETURN-ERROR.
-           MOVE ZERO   TO EPSPARM-BINARY-NUMBER
-                          EPSPARM-NUMBER
-                          EPSPARM-DECIMAL.
-
-      * FIND TRAILING SPACES
-           PERFORM UNTIL WS-IDX = 0
-              IF EPSPARM-VALIDATE-DATA(WS-IDX:1) = SPACES
-                ADD 1      TO WS-TRAILING-SPACES
-                SUBTRACT 1 FROM WS-IDX
-              ELSE
-                MOVE WS-IDX TO WS-END-SPACE
-                MOVE 0 TO WS-IDX
-              END-IF
-           END-PERFORM.
-
-      * FIND LEADING SPACES
-           MOVE 1 TO WS-LEADING-SPACES.
-
-           IF WS-END-SPACE NOT = 0
-              MOVE 1 TO WS-IDX
-              PERFORM UNTIL WS-IDX >= WS-END-SPACE
-                IF EPSPARM-VALIDATE-DATA(WS-IDX:1) = SPACES
-                   ADD 1 TO WS-LEADING-SPACES
-                   ADD 1 TO WS-IDX
-                ELSE
-                   COMPUTE WS-IDX = WS-END-SPACE + 1
-                END-IF
-              END-PERFORM
-           ELSE
-              MOVE STATIC-ERROR-TABLE(1) TO EPSPARM-RETURN-ERROR
-           END-IF.
-
-           MOVE WS-LEADING-SPACES TO WS-IDX.
-           MOVE 1                 TO WS-DEC-IDX.
-           MOVE 0                 TO WS-DECIMAL-SPACE.
-
-      * FIND DECIMAL POINT
-           PERFORM A002-COMPUTE-DECIMAL
-                   UNTIL WS-IDX > WS-END-SPACE
-           .
-
-           IF WS-DECIMAL-SPACE > 0
-              COMPUTE WS-END-SPACE = WS-DECIMAL-SPACE - 1
-           END-IF.
-
-      * VALIDATE NO INTERNAL BLANKS
-           MOVE WS-END-SPACE             TO WS-IDX.
-           MOVE LENGTH OF EPSPARM-NUMBER TO WS-NUM-IDX.
-      *     SUBTRACT 1 FROM WS-NUM-IDX.
-
-           PERFORM A001-COMPUTE-INTEGER
-                   UNTIL WS-IDX < WS-LEADING-SPACES
-           .
-
-           IF EPSPARM-RETURN-ERROR = SPACES
-              COMPUTE EPSPARM-BINARY-NUMBER = EPSPARM-NUMBER
-                                            + EPSPARM-DECIMAL
-           END-IF.
-           GOBACK
-           .
-
-       A001-COMPUTE-INTEGER.
-           IF EPSPARM-VALIDATE-DATA(WS-IDX:1) = ','
-              SUBTRACT 1 FROM WS-IDX
-           ELSE
-              IF EPSPARM-VALIDATE-DATA(WS-IDX:1) = SPACE
-              OR EPSPARM-VALIDATE-DATA(WS-IDX:1) IS NOT NUMERIC
-                 MOVE STATIC-ERROR-TABLE(2) TO EPSPARM-RETURN-ERROR
-                 MOVE 0 TO WS-IDX
-              ELSE
-                 MOVE EPSPARM-VALIDATE-DATA(WS-IDX:1) TO
-                      EPSPARM-NUMBER(WS-NUM-IDX:1)
-                 SUBTRACT 1 FROM WS-IDX
-                                 WS-NUM-IDX
-              END-IF
-           END-IF
-           .
-
-       A002-COMPUTE-DECIMAL.
-           IF WS-DECIMAL-SPACE = 0
-              IF EPSPARM-VALIDATE-DATA(WS-IDX:1) = '.'
-                 MOVE WS-IDX TO WS-DECIMAL-SPACE
-              END-IF
-           ELSE
-              IF EPSPARM-VALIDATE-DATA(WS-IDX:1) = '.'
-                 MOVE STATIC-ERROR-TABLE(3) TO EPSPARM-RETURN-ERROR
-                 MOVE WS-END-SPACE TO WS-IDX
-                 MOVE 1            TO WS-DEC-IDX
-              ELSE
-                 MOVE EPSPARM-VALIDATE-DATA(WS-IDX:1) TO
-                      EPSPARM-DECIMAL(WS-DEC-IDX:1)
-                 ADD 1 TO WS-DEC-IDX
-              END-IF
-           END-IF
-           ADD 1 TO WS-IDX
-           .
+        IDENTIFICATION DIVISION.                                        00010000
+        PROGRAM-ID.    PCOBLPGM.                                        00020005
+        ENVIRONMENT DIVISION.                                           00030000
+        INPUT-OUTPUT SECTION.                                           00040002
+        FILE-CONTROL.                                                   00050002
+           SELECT EMP-FILE ASSIGN TO IFILE                              00060034
+           ORGANIZATION IS  SEQUENTIAL.                                 00070034
+           SELECT EMP-REPT ASSIGN TO SOUT                               00080034
+           ORGANIZATION IS  SEQUENTIAL.                                 00090034
+        DATA DIVISION.                                                  00100000
+        FILE SECTION.                                                   00110002
+      *                                                                 00120002
+        FD EMP-FILE                                                     00130034
+             RECORD CONTAINS 80   CHARACTERS                            00140034
+             DATA RECORD IS EMP-REC.                                    00150034
+                                                                        00160034
+        01 EMP-REC        PIC X(80).                                    00170034
+      *                                                                 00180002
+        FD EMP-REPT                                                     00190034
+             RECORD CONTAINS 80   CHARACTERS                            00200034
+             DATA RECORD IS EMP-REPT-REC.                               00210034
+                                                                        00220034
+        01 EMP-REPT-REC   PIC X(80).                                    00230034
+                                                                        00240034
+        WORKING-STORAGE SECTION.                                        00250000
+                                                                        00260003
+        01  EMP-FILE-EOD  PIC X(02) VALUE  SPACES.                      00270006
+        01  EMP-RECS-CNT  PIC 9(02).                                    00280003
+      *                                                                 00290000
+        01 EMP-HEADER.                                                  00300035
+           05 EMP-NAME    PIC X(10) VALUE  'EMP NAME'.                  00310037
+           05 WS-D-1      PIC X(01) VALUE  '|'.                         00320029
+           05 DEPART-CD   PIC X(10) VALUE  'DEPARTMENT'.                00330037
+           05 WS-D-2      PIC X(01) VALUE  '|'.                         00340035
+           05 DESIG       PIC X(11) VALUE  'DESIGNATION'.               00350037
+           05 WS-D-5      PIC X(01) VALUE  '|'.                         00360029
+      *    05 PSKILL      PIC X(15) VALUE  'PRIMARY SKILL'.             00370040
+      *    05 WS-D-6      PIC X(01) VALUE  '|'.                         00380040
+      *    05 EXP         PIC X(10) VALUE  'EXPERIENCE'.                00390040
+      *    05 WS-D-7      PIC X(01) VALUE  '|'.                         00400040
+           05 WS-FILLER   PIC X(52) VALUE SPACES.                       00410040
+        01 EMP-DTL.                                                     00420039
+           05 D-EMP-NAME    PIC X(10) VALUE  'EMP NAME'.                00430039
+           05 WS-D-11     PIC X(01) VALUE  '|'.                         00440039
+           05 D-DEPART-CD   PIC X(10) VALUE  'DEPARTMENT'.              00450039
+           05 WS-D-22     PIC X(01) VALUE  '|'.                         00460039
+           05 D-DESIG       PIC X(11) VALUE  'DESIGNATION'.             00470039
+           05 WS-D-52     PIC X(01) VALUE  '|'.                         00480039
+      *    05 D-PSKILL      PIC X(15) VALUE  'PRIMARY SKILL'.           00490040
+      *    05 WS-D-62     PIC X(01) VALUE  '|'.                         00500040
+      *    05 D-EXP         PIC X(10) VALUE  'EXPERIENCE'.              00510040
+      *    05 WS-D-72     PIC X(01) VALUE  '|'.                         00520040
+           05 WS-FILLER1  PIC X(52) VALUE SPACES.                       00530040
+        01 EMP-TRL.                                                     00540022
+           05 TOTAL-READ PIC 9(02).                                     00550023
+           05 WS-SPACE  PIC X(01) VALUE SPACES.                         00560041
+           05 WS-A          PIC X(67).                                  00570022
+           05 FILLER        PIC X(097).                                 00580041
+      *                                                                 00590000
+      ******************************************************************00600000
+      *                                                                 00610002
+      *                                                                 00620002
+      *                                                                 00630002
+      ******************************************************************00640000
+        PROCEDURE DIVISION.                                             00650000
+        MAIN-PARA.                                                      00660003
+      *    INITIALIZE EMP-REPT-REC.                                     00670033
+      *                                                                 00680021
+           DISPLAY 'OPEN'                                               00690028
+           OPEN INPUT EMP-FILE                                          00700034
+                OUTPUT EMP-REPT.                                        00710034
+           MOVE ZEROES TO EMP-RECS-CNT.                                 00720034
+           DISPLAY 'EMP-HEADER ' EMP-HEADER                             00730025
+                                                                        00740025
+           MOVE EMP-HEADER  TO  EMP-REPT-REC.                           00750035
+           WRITE EMP-REPT-REC.                                          00760035
+      *    DISPLAY 'EMP-REPT-REC' EMP-REPT-REC                          00770033
+           READ EMP-FILE                                                00780039
+            AT END MOVE 'NO' TO EMP-FILE-EOD                            00790039
+           END-READ.                                                    00800039
+           PERFORM PROCESS-RECORDS                                      00810039
+             UNTIL EMP-FILE-EOD = 'NO' .                                00820039
+           PERFORM PRINT-EMP-REPORT.                                    00830039
+           CLOSE EMP-FILE                                               00840039
+                 EMP-REPT.                                              00850039
+           STOP RUN.                                                    00860003
+       PROCESS-RECORDS.                                                 00870039
+           DISPLAY 'PROCESS-RECORDS'                                    00880039
+           DISPLAY 'EMP-REC' EMP-REC                                    00890039
+           MOVE EMP-REC      TO  EMP-DTL .                              00900039
+           DISPLAY 'EMP-DTL' EMP-DTL                                    00910039
+           MOVE EMP-DTL(1:34) TO  EMP-REPT-REC.                         00920040
+           WRITE EMP-REPT-REC.                                          00930039
+           DISPLAY 'EMP-REPT-REC' EMP-REPT-REC                          00940039
+           INITIALIZE EMP-REPT-REC                                      00950039
+           ADD 1 TO EMP-RECS-CNT.                                       00960039
+           READ EMP-FILE                                                00970039
+            AT END MOVE 'NO' TO EMP-FILE-EOD                            00980039
+           END-READ.                                                    00990039
+       PRINT-EMP-REPORT.                                                01000039
+           INITIALIZE EMP-REPT-REC                                      01010039
+                      EMP-TRL.                                          01020041
+           MOVE EMP-RECS-CNT TO TOTAL-READ.                             01030039
+           MOVE 'RECORDS WERE READ' TO WS-A.                            01040039
+           MOVE EMP-TRL      TO EMP-REPT-REC.                           01050039
+           WRITE EMP-REPT-REC.                                          01060039
