@@ -74,7 +74,9 @@
                                                                         00740025
            MOVE EMP-HEADER  TO  EMP-REPT-REC.                           00750035
            WRITE EMP-REPT-REC.                                          00760035
-      *    DISPLAY 'EMP-REPT-REC' EMP-REPT-REC                          00770033
+      *    DISPLAY 'EMP-REPT-REC' EMP-REPT-REC
+
+           DISPLAY 'HI   file'                                          00770033
            READ EMP-FILE                                                00780039
             AT END MOVE 'NO' TO EMP-FILE-EOD                            00790039
            END-READ.                                                    00800039
