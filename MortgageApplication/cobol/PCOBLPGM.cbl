@@ -88,7 +88,8 @@
            STOP RUN.                                                    00860003
        PROCESS-RECORDS.                                                 00870039
            DISPLAY 'PROCESS-RECORDS'                                    00880039
-           DISPLAY 'EMP-REC' EMP-REC                                    00890039
+           DISPLAY 'EMP-REC' EMP-REC
+           DISPLAY 'HI20122306'                                         00890039
            MOVE EMP-REC      TO  EMP-DTL .                              00900039
            DISPLAY 'EMP-DTL' EMP-DTL                                    00910039
            MOVE EMP-DTL(1:34) TO  EMP-REPT-REC.                         00920040
